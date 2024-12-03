@@ -10,7 +10,7 @@ d = 10;
 
 % USING ERDOS-ROGAN FOR PHYSICAL GRAPH FOR NOW (NEED TO FIGURE OUT THE
 % JAPANESE POPULATION DATABASE)
-Beta = ER(n,p); % Epidemics connectivity graph
+Beta = ER(n,p)+eye(n); % Epidemics connectivity graph
 degree = sum(Beta,2);
 Beta = diag(1./(2*degree))*ones(n).*Beta; % Normalize such that Beta*1n = 0.5*1n
 
@@ -24,7 +24,7 @@ Gamma = @(xOk) diag(0.4*ones(length(xOk),1) - 0.4*xOk); % Rate of a vigilant per
 Theta = @(xOk) diag(0.2*ones(length(xOk),1) + 0.3*xOk); % Rate of a susceptible person to become vigilant
 
 Phi = 0.8*eye(n); % Impact of becoming infected on the opinion
-Delta = 0.2*eye(n); % Recovery rate of infected population
+Delta = 0.2*eye(n); % Recovery rate of infected population (CAN BE DERIVED FROM JAPANESE MINISTRY OF HEALTH DATA)
 
 R0V = eigs(eye(n) - Delta + Beta - Phi*Beta, 1, 'lm');
 
