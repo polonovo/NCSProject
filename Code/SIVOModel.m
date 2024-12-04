@@ -10,12 +10,17 @@ d = 10;
 
 % USING ERDOS-ROGAN FOR PHYSICAL GRAPH FOR NOW (NEED TO FIGURE OUT THE
 % JAPANESE POPULATION DATABASE)
-Beta = ER(n,p)+eye(n); % Epidemics connectivity graph
-degree = sum(Beta,2);
-Beta = diag(1./(2*degree))*ones(n).*Beta; % Normalize such that Beta*1n = 0.5*1n
+% Beta = ER(n,p)+eye(n); % Epidemics connectivity graph
+% degree = sum(Beta,2);
+% Beta = diag(1./(2*degree))*ones(n).*Beta; % Normalize such that Beta*1n = 0.5*1n
+
+% Import adjacency matrix from japanese database
+load("Beta.mat")
+Beta = adj;
 
 % Using Watts-Strotgatz model for opinion graph
 Omega = WS(n,d,p); % Opinions connectivity graph
+degree = sum(Omega,2);
 Omega = diag(1./degree)*ones(n).*Omega; % Normalize such that Omega*1n = 1n
 
 LW = Laplacian(Omega);
