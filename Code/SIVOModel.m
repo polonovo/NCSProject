@@ -14,9 +14,9 @@ d = 10;
 % degree = sum(Beta,2);
 % Beta = diag(1./(2*degree))*ones(n).*Beta; % Normalize such that Beta*1n = 0.5*1n
 
-% Import adjacency matrix from japanese database
+% Import adjacency matrix from Japanese database
 load("Beta.mat")
-Beta = adj;
+Beta = 0.5*adj;
 
 % Using Watts-Strotgatz model for opinion graph
 Omega = WS(n,d,p); % Opinions connectivity graph
@@ -28,14 +28,43 @@ LW = Laplacian(Omega);
 Gamma = @(xOk) diag(0.4*ones(length(xOk),1) - 0.4*xOk); % Rate of a vigilant person to become susceptible
 Theta = @(xOk) diag(0.2*ones(length(xOk),1) + 0.3*xOk); % Rate of a susceptible person to become vigilant
 
-Phi = 0.8*eye(n); % Impact of becoming infected on the opinion
-Delta = 0.2*eye(n); % Recovery rate of infected population (CAN BE DERIVED FROM JAPANESE MINISTRY OF HEALTH DATA)
+Phi = 0.5*eye(n); % Impact of becoming infected on the opinion
 
-R0V = eigs(eye(n) - Delta + Beta - Phi*Beta, 1, 'lm');
+% Load recovery rate matrix from japanese hospitals data
+% Delta = 0.2*eye(n); % Recovery rate of infected population (CAN BE DERIVED FROM JAPANESE MINISTRY OF HEALTH DATA)
+load('Delta.mat')
+Delta = diag(Delta);
+
+PsiFun = @(o) Theta(o)./(Gamma(o)+Theta(o)); % Calculate Psi for Condition numbers
+
+ob = 0:0.01:1; % Opinion state boundaries
+
+for j = 1:length(ob)
+    PSI(j) = PsiFun(ob(j));
+end
+
+% Find psi and psihat
+PsiHat = max(PSI);
+Psi = min(PSI);
+
+R0Vbar = eigs(eye(n) - Delta + Beta - PsiHat*eye(n)*Beta, 1, 'lm');
+R0V = eigs(eye(n) - Delta + Beta - Psi*eye(n)*Beta, 1, 'lm');
+
+if R0Vbar > 1
+    disp('R0V_bar > 1, there is at least one endemic equilibrium')
+else
+    disp('R0V_bar <= 1, there may or may not be an endemic equilibrium')
+end
+
+if R0V <= 1
+    disp('R0V <= 1, there is a healthy globally stable equilibirum')
+else
+    disp('R0V > 1, there is no healthy globally stable equilibrium')
+end
 
 %% Simulation
 
-T = 30; % Final time
+T = 49; % Final time
 
 % Intitial conditions
 xOk = 0.8*rand(n,1);
@@ -61,33 +90,104 @@ xOk = xk(3*n+1:4*n,:); % Opinion
 
 %% Plot
 
+% des_prefs = pref_names';
+des_prefs = {'Kanagawa','Aichi','Hyogo','Miyagi','Tottori'};
+
+choice = find(matches(pref_names,des_prefs));
+
 % plot S
 figure
-plot(xSk')
+hold on
+plot(xSk(choice,:)','LineWidth',2)
+p2 = plot(mean(xSk,1)','k--','LineWidth',2);
 title('Susceptible Population Evolution')
+if length(des_prefs) <= 5
+    legend([des_prefs {'Average'}])
+else
+    legend(p2,'Average')
+end
 xlabel('Time Step (k)')
 ylabel('Susceptible Population')
+movegui('northwest')
 
 % plot I
 figure
-plot(xIk')
+hold on
+plot(xIk(choice,:)','LineWidth',2)
+p2 = plot(mean(xIk,1)','k--','LineWidth',2);
 title('Infected Population Evolution')
+if length(des_prefs) <= 5
+    legend([des_prefs {'Average'}])
+else
+    legend(p2,'Average')
+end
 xlabel('Time Step (k)')
 ylabel('Infected Population')
+movegui('northeast')
 
 % plot V
 figure
-plot(xVk')
+hold on
+plot(xVk(choice,:)','LineWidth',2)
+p2 = plot(mean(xVk,1)','k--','LineWidth',2);
 title('Vigilant Population Evolution')
+if length(des_prefs) <= 5
+    legend([des_prefs {'Average'}])
+else
+    legend(p2,'Average')
+end
 xlabel('Time Step (k)')
 ylabel('Vigilant Population')
+movegui('southwest')
+
 
 % plot O
 figure
-plot(xOk')
+hold on
+plot(xOk(choice,:)','LineWidth',2)
+p2 = plot(mean(xOk,1)','k--','LineWidth',2);
 title('Population Opinion Evolution')
+if length(des_prefs) <= 5
+    legend([des_prefs {'Average'}])
+else
+    legend(p2,'Average')
+end
 xlabel('Time Step (k)')
-ylabel('Opinion')
+ylabel('Population Opinion ')
+movegui('southeast')
+
+% All four
+figure
+subplot(2,2,1)
+hold on
+plot(xSk(choice,:)','LineWidth',2)
+p2 = plot(mean(xSk,1)','k--','LineWidth',2);
+xlabel('Time Step (k)')
+ylabel('Susceptible Population')
+subplot(2,2,2)
+hold on
+plot(xIk(choice,:)','LineWidth',2)
+p2 = plot(mean(xIk,1)','k--','LineWidth',2);
+xlabel('Time Step (k)')
+ylabel('Infected Population')
+subplot(2,2,3)
+hold on
+plot(xVk(choice,:)','LineWidth',2)
+p2 = plot(mean(xVk,1)','k--','LineWidth',2);
+xlabel('Time Step (k)')
+ylabel('Vigilant Population')
+subplot(2,2,4)
+hold on
+plot(xOk(choice,:)','LineWidth',2)
+p2 = plot(mean(xOk,1)','k--','LineWidth',2);
+xlabel('Time Step (k)')
+ylabel('Population Opinion')
+if length(des_prefs) <= 5
+    legend([des_prefs {'Average'}],'Location','northeast')
+else
+    legend(p2,'Average','Location','northeast')
+end
+sgtitle('SIVO Epidemics Model')
 
 
 %% Functions
@@ -116,10 +216,10 @@ end
 
 function LW = Laplacian(W)
 
+% Laplacian =  I - W
+
 n = length(W);
 
-% degree = sum(W);
-% LW = diag(degree)/n - W;
 LW = eye(n) - W;
 
 end

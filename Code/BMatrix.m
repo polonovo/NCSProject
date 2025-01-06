@@ -7,11 +7,13 @@ clear, close all
 addpath("./../Data")
 data = readtable("japanData2.csv");
 
+% get rid of Kumamoto and extra jKpan
 adj = data(3:49,5:end);
 adj(:,"Kumamoto") = [];
 adj(45,:) = [];
 adj = table2array(adj)'./100;
 
+% Make row stochastic
 deg = sum(adj,2);
 adj = (diag(1./deg))*adj;
 
@@ -26,11 +28,10 @@ adj = (diag(1./deg))*adj;
 %     adj = adj*(diag(1./deg2));
 % end
 
-adj = 0.5*adj;
-
-names = data.Var2(3:49);
-names(43) = [];
+% Save prefecture names
+pref_names = data.Var2(3:49);
+pref_names(43) = [];
 
 n = length(adj);
 
-save("Beta.mat",'adj')
+save("Beta.mat",'adj','pref_names')
