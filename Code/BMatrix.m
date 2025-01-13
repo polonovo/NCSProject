@@ -13,6 +13,8 @@ adj(:,"Kumamoto") = [];
 adj(45,:) = [];
 adj = table2array(adj)'./100;
 
+adj(ad)
+
 % Make row stochastic
 deg = sum(adj,2);
 adj = (diag(1./deg))*adj;

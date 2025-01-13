@@ -16,7 +16,7 @@ d = 10;
 
 % Import adjacency matrix from Japanese database
 load("Beta.mat")
-Beta = 0.5*adj;
+Beta = 0.9*adj;
 
 % Using Watts-Strotgatz model for opinion graph
 Omega = WS(n,d,p); % Opinions connectivity graph
@@ -25,14 +25,12 @@ Omega = diag(1./degree)*ones(n).*Omega; % Normalize such that Omega*1n = 1n
 
 LW = Laplacian(Omega);
 
-% Control parameters
 epsilon = 0;
-tau = 0;
 
 Gamma = @(xOk) diag((0.4-epsilon)*ones(length(xOk),1) - (0.4-epsilon)*xOk); % Rate of a vigilant person to become susceptible
-Theta = @(xOk) diag((0.2+epsilon)*ones(length(xOk),1) + (0.3-epsilon)*xOk); % Rate of a susceptible person to become vigilant
+Theta = @(xOk) diag((0.2-epsilon)*ones(length(xOk),1) + 0.3*xOk); % Rate of a susceptible person to become vigilant
 
-Phi = 0.1*eye(n); % Impact of becoming infected on the opinion
+Phi = 0.9*eye(n); % Impact of becoming infected on the opinion
 
 % Load recovery rate matrix from japanese hospitals data
 % Delta = 0.2*eye(n); % Recovery rate of infected population (CAN BE DERIVED FROM JAPANESE MINISTRY OF HEALTH DATA)
@@ -66,9 +64,6 @@ else
     disp('R0V > 1, there is no healthy globally stable equilibrium')
 end
 
-ROVSIS = eigs(eye(n) - Delta + Beta, 1, 'lm');
-
-
 %% Simulation
 
 T = 49; % Final time
@@ -86,7 +81,7 @@ xk = [xSk;
 
 % Sim
 for i = 1:T
-    xk1 = SIVO(xk(:,i),n,Omega,Beta,Phi,Delta,Gamma,Theta,tau);
+    xk1 = SIVO(xk(:,i),n,Omega,Beta,Phi,Delta,Gamma,Theta);
     xk = [xk xk1];
 end
 
@@ -97,8 +92,8 @@ xOk = xk(3*n+1:4*n,:); % Opinion
 
 %% Plot
 
-% des_prefs = pref_names';
-des_prefs = {'Kanagawa','Aichi','Hyogo','Miyagi','Tottori'};
+des_prefs = pref_names';
+% des_prefs = {'Kanagawa','Aichi','Hyogo','Miyagi','Tottori'};
 
 choice = find(matches(pref_names,des_prefs));
 
@@ -201,7 +196,7 @@ sgtitle(['SIVO Epidemics Model w/ ROV: ' num2str(R0V) ' and ROV_{bar}: ' num2str
 
 %% Functions
 
-function [xk1] = SIVO(xk,n,Omega,Beta,Phi,Delta,Gamma,Theta,tau)
+function [xk1] = SIVO(xk,n,Omega,Beta,Phi,Delta,Gamma,Theta)
 
 I = eye(n);
 One =  ones(n,1);
@@ -213,8 +208,7 @@ xOk = xk(3*n+1:4*n); % Opinion
 
 xIk1 = xIk + (diag(One - xVk - xIk))*Beta*xIk - Delta*xIk; % Update infected
 xVk1 = xVk + Delta*xIk + Theta(xOk)*(One - xVk - xIk) - Gamma(xOk)*xVk; % Update vigilant
-% xOk1 = Phi*xIk + (I - Phi)*(xOk + (I - I*xOk)*-Laplacian(Omega)*xOk); % Update opinion
-xOk1 = tau+(1-tau)*(Phi*xIk + (I - Phi)*((I - I*xOk)*Omega + xOk)*xOk); % Update opinion
+xOk1 = Phi*xIk + (I - Phi)*(xOk + (I - I*xOk)*-Laplacian(Omega)*xOk); % Update opinion
 xSk1 = One - xVk1 - xIk1; % Update susceptible
 
 xk1 = [xSk1;
